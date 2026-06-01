@@ -2,11 +2,11 @@ import http from "node:http";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SkillStore } from "./lib/skills.js";
+import { configuredRoots, SkillStore } from "./lib/skills.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
-const store = new SkillStore();
+const store = new SkillStore(configuredRoots({ env: process.env }));
 const port = Number(process.env.PORT || 4173);
 
 const mimeTypes = {
@@ -42,6 +42,10 @@ async function handleApi(req, res, url) {
     return send(res, 200, { skills: await store.list() });
   }
 
+  if (req.method === "GET" && url.pathname === "/api/roots") {
+    return send(res, 200, { roots: store.listRoots() });
+  }
+
   if (req.method === "POST" && url.pathname === "/api/skills") {
     return send(res, 201, await store.create(await readJson(req)));
   }
@@ -62,7 +66,7 @@ async function handleApi(req, res, url) {
       return send(res, 200, await store.setDisabled(id, false));
     }
     if (req.method === "POST" && parts[3] === "install") {
-      return send(res, 201, await store.installFromArchive(id, await readJson(req)));
+      return send(res, 201, await store.install(id, await readJson(req)));
     }
   }
 

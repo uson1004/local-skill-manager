@@ -22,12 +22,7 @@
           <input id="search" type="search" placeholder="name, description, root" autocomplete="off" />
         </label>
 
-        <div class="filters" aria-label="Root filters">
-          <button class="filter active" data-root="all">All</button>
-          <button class="filter" data-root="codex">Codex</button>
-          <button class="filter" data-root="agents">Agents</button>
-          <button class="filter" data-root="archive">Archive</button>
-        </div>
+        <div class="filters" id="filters" aria-label="Root filters"></div>
 
         <div class="summary" id="summary">스킬을 불러오는 중</div>
         <ul class="skill-list" id="skillList"></ul>
@@ -71,10 +66,7 @@
         <h3>새 스킬 만들기</h3>
         <label>
           Root
-          <select name="rootKey">
-            <option value="codex">Codex skills</option>
-            <option value="agents">Agents skills</option>
-          </select>
+          <select name="rootKey" id="createRoot"></select>
         </label>
         <label>
           Name

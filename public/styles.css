@@ -100,8 +100,8 @@ h1 {
 }
 
 .filters {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 0 20px 14px;
 }
@@ -127,6 +127,7 @@ button:disabled {
 }
 
 .filter {
+  flex: 1 1 76px;
   padding: 8px 6px;
   font-size: 12px;
 }

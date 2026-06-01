@@ -1,4 +1,5 @@
 const state = {
+  roots: [],
   skills: [],
   selected: null,
   selectedId: null,
@@ -11,7 +12,8 @@ const els = {
   list: document.querySelector("#skillList"),
   summary: document.querySelector("#summary"),
   search: document.querySelector("#search"),
-  filters: document.querySelectorAll(".filter"),
+  filters: document.querySelector("#filters"),
+  createRoot: document.querySelector("#createRoot"),
   title: document.querySelector("#title"),
   rootLabel: document.querySelector("#rootLabel"),
   directory: document.querySelector("#directory"),
@@ -56,6 +58,40 @@ function filteredSkills() {
   });
 }
 
+function writableRoots() {
+  return state.roots.filter((root) => root.writable);
+}
+
+function renderRoots() {
+  const rootButtons = [
+    { key: "all", label: "All" },
+    ...state.roots.map((root) => ({ key: root.key, label: root.label }))
+  ];
+  els.filters.replaceChildren(
+    ...rootButtons.map((root) => {
+      const button = document.createElement("button");
+      button.className = `filter${root.key === state.root ? " active" : ""}`;
+      button.dataset.root = root.key;
+      button.textContent = root.key === "all" ? "All" : root.label.replace(/\s+skills$/i, "");
+      button.addEventListener("click", () => {
+        state.root = root.key;
+        renderRoots();
+        renderList();
+      });
+      return button;
+    })
+  );
+
+  els.createRoot.replaceChildren(
+    ...writableRoots().map((root) => {
+      const option = document.createElement("option");
+      option.value = root.key;
+      option.textContent = root.label;
+      return option;
+    })
+  );
+}
+
 function renderList() {
   const skills = filteredSkills();
   els.summary.textContent = `${skills.length}개 표시 / 전체 ${state.skills.length}개`;
@@ -87,8 +123,13 @@ function escapeHtml(value) {
 }
 
 async function loadSkills() {
-  const data = await api("/api/skills");
-  state.skills = data.skills;
+  const [rootsData, skillsData] = await Promise.all([
+    api("/api/roots"),
+    api("/api/skills")
+  ]);
+  state.roots = rootsData.roots;
+  state.skills = skillsData.skills;
+  renderRoots();
   renderList();
 }
 
@@ -107,8 +148,8 @@ async function selectSkill(id) {
   els.editor.value = skill.content;
   els.editor.disabled = !skill.writable;
   els.save.disabled = !skill.writable;
-  els.install.hidden = skill.rootKey !== "archive";
-  els.toggle.hidden = !skill.writable || skill.rootKey === "archive";
+  els.install.hidden = skill.writable || writableRoots().length === 0;
+  els.toggle.hidden = !skill.writable;
   els.toggle.textContent = skill.disabled ? "활성화" : "비활성화";
   renderList();
 }
@@ -127,13 +168,15 @@ async function saveSelected() {
 
 async function installSelected() {
   if (!state.selectedId) return;
+  const target = writableRoots()[0];
+  if (!target) return toast("설치 가능한 writable root가 없습니다.");
   const installed = await api(`/api/skills/${state.selectedId}/install`, {
     method: "POST",
-    body: JSON.stringify({ targetRootKey: "codex" })
+    body: JSON.stringify({ targetRootKey: target.key })
   });
   await loadSkills();
   await selectSkill(installed.id);
-  toast("Codex skills에 설치했습니다.");
+  toast(`${target.label}에 설치했습니다.`);
 }
 
 async function toggleSelected() {
@@ -148,15 +191,6 @@ async function toggleSelected() {
 els.search.addEventListener("input", (event) => {
   state.query = event.target.value;
   renderList();
-});
-
-els.filters.forEach((button) => {
-  button.addEventListener("click", () => {
-    els.filters.forEach((filter) => filter.classList.remove("active"));
-    button.classList.add("active");
-    state.root = button.dataset.root;
-    renderList();
-  });
 });
 
 els.editor.addEventListener("input", () => {
