@@ -1,5 +1,5 @@
 {
-  "name": "skill-management-service",
+  "name": "codex-skill-manager",
   "version": "1.0.0",
   "private": true,
   "type": "module",
