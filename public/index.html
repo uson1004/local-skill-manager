@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Skill Management Service</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="mark">S</span>
+          <div>
+            <h1>Skill Manager</h1>
+            <p>Codex 스킬을 검색, 편집, 설치합니다.</p>
+          </div>
+        </div>
+
+        <label class="search">
+          <span>검색</span>
+          <input id="search" type="search" placeholder="name, description, root" autocomplete="off" />
+        </label>
+
+        <div class="filters" aria-label="Root filters">
+          <button class="filter active" data-root="all">All</button>
+          <button class="filter" data-root="codex">Codex</button>
+          <button class="filter" data-root="agents">Agents</button>
+          <button class="filter" data-root="archive">Archive</button>
+        </div>
+
+        <div class="summary" id="summary">스킬을 불러오는 중</div>
+        <ul class="skill-list" id="skillList"></ul>
+      </aside>
+
+      <main class="workspace">
+        <header class="toolbar">
+          <div>
+            <p class="eyebrow" id="rootLabel">Ready</p>
+            <h2 id="title">스킬을 선택하세요</h2>
+          </div>
+          <div class="actions">
+            <button id="newButton">새 스킬</button>
+            <button id="installButton" hidden>설치</button>
+            <button id="toggleButton" hidden>비활성화</button>
+            <button id="saveButton" class="primary" disabled>저장</button>
+          </div>
+        </header>
+
+        <section class="metadata">
+          <div>
+            <span>Directory</span>
+            <strong id="directory">-</strong>
+          </div>
+          <div>
+            <span>Status</span>
+            <strong id="status">-</strong>
+          </div>
+          <div>
+            <span>Updated</span>
+            <strong id="updatedAt">-</strong>
+          </div>
+        </section>
+
+        <textarea id="editor" spellcheck="false" placeholder="SKILL.md 내용이 여기에 표시됩니다."></textarea>
+      </main>
+    </div>
+
+    <dialog id="createDialog">
+      <form method="dialog" id="createForm">
+        <h3>새 스킬 만들기</h3>
+        <label>
+          Root
+          <select name="rootKey">
+            <option value="codex">Codex skills</option>
+            <option value="agents">Agents skills</option>
+          </select>
+        </label>
+        <label>
+          Name
+          <input name="name" required pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,79}" placeholder="my-skill" />
+        </label>
+        <label>
+          Description
+          <input name="description" placeholder="When to use this skill" />
+        </label>
+        <menu>
+          <button value="cancel">취소</button>
+          <button class="primary" value="create">생성</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
