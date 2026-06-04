@@ -13,6 +13,12 @@ import {
   parseExtraRoots,
   parseSkill
 } from "../lib/skills.js";
+import {
+  extractMcpCall,
+  parseCodexMcpGet,
+  parseCodexMcpList,
+  parseMcpConfigToml
+} from "../lib/mcp.js";
 
 async function fixture() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "skill-store-"));
@@ -105,4 +111,59 @@ test("rejects path traversal ids", async () => {
   const { store } = await fixture();
   const id = encodeId("codex", "../outside");
   assert.throws(() => store.resolveSkill(id), /escapes configured root/);
+});
+
+test("parses codex mcp list output", () => {
+  const names = parseCodexMcpList(`Name            Command\nfigma           http://127.0.0.1:3845/mcp\nkorean_law      npx\n\nName    Url\nstitch  https://stitch.googleapis.com/mcp\n`);
+  assert.deepEqual(names, ["figma", "korean_law", "stitch"]);
+});
+
+test("parses codex mcp get output", () => {
+  const parsed = parseCodexMcpGet(`figma\n  enabled: true\n  transport: streamable_http\n  url: http://127.0.0.1:3845/mcp\n  bearer_token_env_var: -\n  http_headers: X-Test=foo, X-Trace=bar\n  env_http_headers: MCP_TOKEN=header\n`);
+  assert.equal(parsed.name, "figma");
+  assert.equal(parsed.transport, "streamable_http");
+  assert.deepEqual(parsed.httpHeaderKeys, ["X-Test", "X-Trace"]);
+  assert.deepEqual(parsed.envHttpHeaderKeys, ["MCP_TOKEN"]);
+});
+
+test("parses mcp config tables from codex config", () => {
+  const servers = parseMcpConfigToml(`
+[mcp_servers.figma]
+url = "http://127.0.0.1:3845/mcp"
+
+[mcp_servers.korean_law]
+command = "npx"
+args = ["-y", "korean-law-mcp@4.0.1"]
+enabled = true
+
+[mcp_servers.korean_law.env]
+LAW_OC = "SET_YOUR_LAW_OC_KEY"
+`);
+  assert.equal(servers.figma.url, "http://127.0.0.1:3845/mcp");
+  assert.equal(servers.korean_law.command, "npx");
+  assert.deepEqual(servers.korean_law.args, ["-y", "korean-law-mcp@4.0.1"]);
+  assert.deepEqual(servers.korean_law.envKeys, ["LAW_OC"]);
+});
+
+test("extracts and redacts mcp call arguments from session log entries", () => {
+  const call = extractMcpCall({
+    timestamp: "2026-05-06T00:02:22.199Z",
+    type: "response_item",
+    payload: {
+      type: "function_call",
+      name: "get_design_context",
+      namespace: "mcp__figma__",
+      arguments: JSON.stringify({
+        nodeId: "1073:3108",
+        apiKey: "secret-value",
+        nested: { password: "hidden", keep: "ok" }
+      }),
+      call_id: "call_demo"
+    }
+  }, "/tmp/session.jsonl");
+  assert.equal(call.serverName, "figma");
+  assert.equal(call.toolLabel, "get_design_context");
+  assert.equal(call.argumentsSummary.apiKey, "[redacted]");
+  assert.equal(call.argumentsSummary.nested.password, "[redacted]");
+  assert.equal(call.argumentsSummary.nested.keep, "ok");
 });

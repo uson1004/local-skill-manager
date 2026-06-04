@@ -1,23 +1,25 @@
 # Codex Skill Manager
 
-A local web dashboard for browsing and managing agent skill files on your machine.
+로컬 머신의 스킬 파일과 Codex MCP 상태를 확인하고 관리하는 작은 웹 대시보드입니다.
 
-This project does not ship with someone else's skills baked into the HTML. It scans skill folders from the computer where it is running, then shows those local `SKILL.md` files in a small browser UI.
+이 프로젝트는 다른 사람의 스킬 데이터를 정적으로 포함하지 않습니다. 실행 중인 컴퓨터의 스킬 폴더를 직접 스캔해 `SKILL.md` 파일을 보여주고, Codex CLI와 세션 로그를 읽어 현재 등록된 MCP와 최근 호출 흔적을 표시합니다.
 
-## What It Does
+## 무엇을 할 수 있나
 
-- Finds local `SKILL.md` files across common agent skill folders.
-- Searches by skill name, description, root, and directory.
-- Opens skill files for reading in the browser.
-- Edits writable `SKILL.md` files directly on disk.
-- Creates new skills in writable roots.
-- Installs read-only archive skills into a writable root.
-- Disables skills reversibly by renaming `SKILL.md` to `SKILL.md.disabled`.
-- Supports any number of extra skill folders with `SKILL_ROOTS`.
+- 여러 스킬 루트에서 로컬 `SKILL.md` 파일을 찾습니다.
+- 스킬 이름, 설명, 루트, 디렉터리 기준으로 검색합니다.
+- 브라우저에서 스킬 내용을 열람합니다.
+- 쓰기 가능한 스킬은 브라우저에서 바로 수정합니다.
+- 새 스킬을 생성합니다.
+- 읽기 전용 아카이브 스킬을 쓰기 가능한 루트로 설치합니다.
+- `SKILL.md`를 `SKILL.md.disabled`로 바꿔 스킬을 비활성화합니다.
+- Codex에 등록된 MCP 서버 목록과 설정을 확인합니다.
+- Codex 세션 로그를 읽어 최근 MCP 호출 흔적을 요약해 보여줍니다.
+- `SKILL_ROOTS`로 추가 스킬 폴더를 원하는 만큼 연결할 수 있습니다.
 
-## Default Skill Folders
+## 기본 스킬 폴더
 
-By default, the app scans these folders under the current user's home directory:
+기본적으로 현재 사용자 홈 디렉터리 아래의 다음 경로를 스캔합니다.
 
 ```text
 ~/.codex/skills
@@ -28,50 +30,95 @@ By default, the app scans these folders under the current user's home directory:
 ~/skills-archive
 ```
 
-Missing folders are skipped. The app still starts even if only one of these paths exists.
+없는 폴더는 건너뜁니다. 하나만 있어도 앱은 실행됩니다.
 
-## Quick Start
+## 빠른 시작
 
-Requirements:
+요구 사항:
 
-- Node.js 18 or newer
+- Node.js 18 이상
 - npm
 
-Clone and run:
+실행:
 
 ```bash
-git clone <your-repo-url>
-cd codex-skill-manager
 npm start
 ```
 
-Open:
+접속:
 
 ```text
 http://localhost:4173
 ```
 
-Use another port:
+다른 포트를 쓰려면:
 
 ```bash
 PORT=4180 npm start
 ```
 
-Then open `http://localhost:4180`.
+그다음 `http://localhost:4180`으로 접속하면 됩니다.
 
-## Add More Skill Folders
+## 화면 구성
 
-If your skills live somewhere else, pass extra folders with `SKILL_ROOTS`.
+좌측 상단에서 `Skills`와 `MCP` 모드를 전환할 수 있습니다.
 
-Comma-separated paths:
+- `Skills`
+  로컬 스킬 검색, 편집, 생성, 설치, 활성화/비활성화를 제공합니다.
+- `MCP`
+  현재 Codex에 등록된 MCP 서버 목록과 최근 호출 요약을 보여줍니다.
+
+## MCP 정보는 어떻게 읽나
+
+MCP 화면은 두 종류의 데이터를 조합합니다.
+
+### 1. 등록된 MCP 목록
+
+우선 Codex CLI를 호출합니다.
+
+```bash
+codex mcp list
+codex mcp get <name>
+```
+
+앱은 여기서 서버 이름, 상태, transport, URL 또는 command, args, 환경 변수 키 이름 등을 읽습니다.
+
+CLI 조회가 실패하면 `~/.codex/config.toml`의 `[mcp_servers.*]` 섹션을 직접 파싱하는 fallback 경로를 사용합니다.
+
+### 2. 최근 MCP 호출 로그
+
+다음 경로의 JSONL 세션 로그를 읽습니다.
+
+```text
+~/.codex/sessions/
+~/.codex/archived_sessions/
+```
+
+각 이벤트 중 `mcp__*` 네임스페이스의 함수 호출만 추려서 최근 호출 요약으로 보여줍니다.
+
+민감한 인자는 그대로 노출하지 않습니다.
+
+- `token`
+- `secret`
+- `password`
+- `authorization`
+- `apiKey`
+
+같은 키는 `[redacted]`로 마스킹됩니다.
+
+## 더 많은 스킬 폴더 추가하기
+
+스킬이 다른 경로에 있다면 `SKILL_ROOTS`로 추가할 수 있습니다.
+
+쉼표 구분:
 
 ```bash
 SKILL_ROOTS="$HOME/work/skills,$HOME/lab/agent-skills" npm start
 ```
 
-Newline or semicolon-separated values also work.
+줄바꿈이나 세미콜론도 지원합니다.
 
-For custom labels or read-only folders, use JSON:
+라벨과 읽기 전용 여부까지 직접 지정하려면 JSON을 사용합니다.
 
 ```bash
 SKILL_ROOTS='[
@@ -80,58 +127,58 @@ SKILL_ROOTS='[
 ]' npm start
 ```
 
-Fields:
+필드 설명:
 
-- `key`: stable internal ID for the folder
-- `label`: display name in the UI
-- `path`: folder to scan
-- `writable`: whether the UI can create, edit, install, enable, or disable skills in that folder
+- `key`: 내부에서 쓰는 고정 ID
+- `label`: 화면에 표시할 이름
+- `path`: 스캔할 폴더
+- `writable`: 생성, 편집, 설치, 활성화, 비활성화 허용 여부
 
-String-only `SKILL_ROOTS` entries default to writable.
+문자열만 넣은 항목은 기본적으로 `writable: true`로 처리합니다.
 
-## Skill Folder Shape
+## 스킬 폴더 구조
 
-Each skill is expected to live in its own directory with a `SKILL.md` file:
+각 스킬은 보통 자신의 디렉터리 안에 `SKILL.md`를 가집니다.
 
 ```text
 my-skill/
   SKILL.md
 ```
 
-Recommended `SKILL.md` frontmatter:
+권장 frontmatter:
 
 ```markdown
 ---
 name: my-skill
-description: Use this when you need to do a specific task.
+description: 이 스킬을 언제 쓰는지 설명합니다.
 ---
 
 # Instructions
 
-Write the skill instructions here.
+스킬 지침을 여기에 작성합니다.
 ```
 
-The app can still show files without frontmatter, but name and description discovery works best with it.
+frontmatter가 없어도 열람은 가능하지만, 이름과 설명 검색 품질은 떨어집니다.
 
-## Safety Model
+## 안전 모델
 
-This is a local-first tool:
+이 도구는 로컬 우선 방식으로 동작합니다.
 
-- It reads files from local folders only.
-- It does not upload skill contents anywhere.
-- It has no database.
-- It has no login system.
-- Browser edits write directly to the local `SKILL.md` file.
+- 로컬 폴더만 읽습니다.
+- 스킬 내용을 외부로 업로드하지 않습니다.
+- 별도 데이터베이스가 없습니다.
+- 로그인 기능이 없습니다.
+- 브라우저 편집은 로컬 `SKILL.md` 파일을 바로 수정합니다.
 
-Writable roots allow file changes. Read-only roots can be browsed and used as install sources, but they cannot be edited in place.
+쓰기 가능한 루트만 파일 변경이 가능하고, 읽기 전용 루트는 열람과 설치 소스로만 사용됩니다.
 
-Disable is reversible:
+비활성화는 되돌릴 수 있습니다.
 
 ```text
 SKILL.md -> SKILL.md.disabled
 ```
 
-Enable renames it back:
+다시 활성화하면 원래 이름으로 복원됩니다.
 
 ```text
 SKILL.md.disabled -> SKILL.md
@@ -139,7 +186,7 @@ SKILL.md.disabled -> SKILL.md
 
 ## API
 
-The UI uses a small local HTTP API:
+브라우저 UI는 다음 로컬 HTTP API를 사용합니다.
 
 ```text
 GET  /api/health
@@ -151,58 +198,109 @@ PUT  /api/skills/:id
 POST /api/skills/:id/install
 POST /api/skills/:id/disable
 POST /api/skills/:id/enable
+GET  /api/mcp
+GET  /api/mcp/logs?limit=50
 ```
 
-## Development
+### `GET /api/mcp`
 
-Run tests:
+등록된 MCP 서버 목록을 반환합니다.
+
+예시 필드:
+
+```json
+{
+  "id": "codex:figma",
+  "client": "codex",
+  "name": "figma",
+  "source": "cli",
+  "status": "enabled",
+  "transport": "streamable_http",
+  "url": "http://127.0.0.1:3845/mcp"
+}
+```
+
+### `GET /api/mcp/logs`
+
+최근 MCP 호출 요약을 반환합니다.
+
+예시 필드:
+
+```json
+{
+  "timestamp": "2026-06-01T05:47:52.229Z",
+  "toolName": "js",
+  "namespace": "mcp__node_repl",
+  "serverName": "node_repl",
+  "argumentsSummary": {
+    "title": "Open local app"
+  }
+}
+```
+
+## 개발
+
+테스트:
 
 ```bash
 npm test
 ```
 
-Run syntax checks:
+문법 체크:
 
 ```bash
 node -c server.js
 node -c lib/skills.js
+node -c lib/mcp.js
 node -c public/app.js
 ```
 
-Project structure:
+프로젝트 구조:
 
 ```text
 .
-├── lib/skills.js        # skill discovery and filesystem operations
-├── public/              # browser UI
-├── server.js            # local HTTP server and API routes
-└── test/skills.test.js  # node:test coverage
+├── lib/skills.js        # 스킬 탐색과 파일시스템 작업
+├── lib/mcp.js           # MCP 목록과 세션 로그 수집
+├── public/              # 브라우저 UI
+├── server.js            # 로컬 HTTP 서버와 API
+└── test/skills.test.js  # node:test 기반 테스트
 ```
 
-## Troubleshooting
+## 문제 해결
 
-No skills appear:
+스킬이 보이지 않을 때:
 
-- Check that at least one scanned folder exists.
-- Check that each skill folder contains `SKILL.md`.
-- Run with `SKILL_ROOTS` if your skills live outside the default folders.
+- 스캔 대상 폴더 중 최소 하나가 실제로 존재하는지 확인합니다.
+- 각 스킬 폴더에 `SKILL.md`가 있는지 확인합니다.
+- 기본 경로 밖에 있다면 `SKILL_ROOTS`로 추가합니다.
 
-Port already in use:
+MCP 목록이 비어 있을 때:
+
+- 터미널에서 `codex mcp list`가 동작하는지 확인합니다.
+- Codex 설정 파일 `~/.codex/config.toml`에 `mcp_servers` 설정이 있는지 확인합니다.
+- Codex CLI가 현재 사용자 환경과 같은 계정/설정 경로를 보고 있는지 확인합니다.
+
+최근 MCP 호출이 보이지 않을 때:
+
+- `~/.codex/sessions` 또는 `~/.codex/archived_sessions`에 로그가 쌓였는지 확인합니다.
+- 아직 MCP를 실제 호출한 적이 없으면 목록은 비어 있을 수 있습니다.
+
+포트 충돌:
 
 ```bash
 PORT=4180 npm start
 ```
 
-Edits are disabled:
+편집이 비활성화될 때:
 
-- The selected root is read-only.
-- Start with a writable custom root or edit a skill under a writable default root.
+- 선택한 루트가 읽기 전용일 수 있습니다.
+- 쓰기 가능한 커스텀 루트를 추가하거나, 기본 writable 루트의 스킬을 선택합니다.
 
-Archive install fails:
+아카이브 설치가 실패할 때:
 
-- A skill with the same folder name may already exist in the target root.
-- Rename the target skill or remove the existing one manually if you really want to replace it.
+- 대상 루트에 같은 폴더 이름의 스킬이 이미 있을 수 있습니다.
+- 정말 덮어써야 한다면 기존 폴더를 정리하거나 다른 이름으로 설치합니다.
 
-## License
+## 라이선스
 
-Add a license before publishing if you want others to reuse or modify this project.
+배포하거나 재사용을 허용하려면 적절한 라이선스를 추가하세요.

@@ -99,6 +99,13 @@ h1 {
   color: var(--ink);
 }
 
+.mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 18px 20px 0;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;

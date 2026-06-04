@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { configuredRoots, SkillStore } from "./lib/skills.js";
+import { listMcpServers, listRecentMcpCalls } from "./lib/mcp.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -44,6 +45,15 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/roots") {
     return send(res, 200, { roots: store.listRoots() });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/mcp") {
+    return send(res, 200, { servers: await listMcpServers() });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/mcp/logs") {
+    const limit = Math.max(1, Math.min(200, Number(url.searchParams.get("limit") || 50)));
+    return send(res, 200, { calls: await listRecentMcpCalls({ limit }) });
   }
 
   if (req.method === "POST" && url.pathname === "/api/skills") {
